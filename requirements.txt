@@ -1,0 +1,5 @@
+logzero  # see github.com/metachris/logzero
+black
+pydocstyle
+dnszone
+blackhc.progress_bar
