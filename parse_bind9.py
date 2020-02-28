@@ -28,15 +28,21 @@ victims = []
 
 
 def main(args):
-    """ Main entry point of the app """
+    """Enter the app."""
     global victims
     logger.info("hello world")
     logger.info(args)
+    record_type = "A"
+    if args.aaaa:
+        record_type = "AAAA"
+        logger.info("Record Type set to AAAA")
     if args.filenames:
         filenames = filenamesToList(args.filenames)
-        logger.info(filenames)
+        logger.info("Filename(s) parsing: %s" % filenames)
     for filename in filenames:
-        dnsp = DnsParser(args.ip, filename=filename, debug=args.debug)
+        dnsp = DnsParser(
+            args.ip, filename=filename, record_type=record_type, debug=args.debug
+        )
         tmpresults = dnsp.run_parser()
         if tmpresults:
             victims.extend(tmpresults[:])
@@ -75,6 +81,18 @@ if __name__ == "__main__":
     # Optional argument flag which defaults to False
     parser.add_argument(
         "-d", "--debug", action="store_true", default=False, help="Enable debug mode"
+    )
+
+    # Option argument for IPv6 which defaults to False
+
+    parser.add_argument(
+        "-6",
+        "--IPv6",
+        "--AAAA",
+        action="store_true",
+        dest="aaaa",
+        default=False,
+        help="Perform a search for a 'AAAA' record",
     )
 
     # Optional argument which requires a parameter (eg. -d test)
