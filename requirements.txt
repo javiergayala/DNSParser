@@ -1,5 +1,5 @@
 logzero  # see github.com/metachris/logzero
 black
 pydocstyle
-dnszone
+dnszone >= 2.0.2
 blackhc.progress_bar
