@@ -6,15 +6,15 @@ __version__ = "0.1.0"
 __license__ = "MIT"
 
 import argparse
+import logging
 import os
 
+import logzero
 from blackhc.progress_bar import with_progress_bar
 from dnszone import dnszone
-from DnsParser import DnsParser
-from DnsParser import DnsParserError
-from DnsParser import DnsParserInputError
-
 from logzero import logger
+
+from DnsParser import DnsParser, DnsParserError, DnsParserInputError
 
 # Read in the zone file
 zonefile = dnszone.zone_from_file(
@@ -30,15 +30,17 @@ victims = []
 def main(args):
     """Enter the app."""
     global victims
-    logger.info("hello world")
-    logger.info(args)
+    logzero.loglevel(logging.INFO)
+    if args.verbose >= 1:
+        logzero.loglevel(logging.DEBUG)
+    logger.debug(args)
     record_type = "A"
     if args.aaaa:
         record_type = "AAAA"
         logger.info("Record Type set to AAAA")
     if args.filenames:
         filenames = filenamesToList(args.filenames)
-        logger.info("Filename(s) parsing: %s" % filenames)
+        logger.debug("Filename(s) parsing: %s" % filenames)
     for filename in filenames:
         dnsp = DnsParser(
             args.ip, filename=filename, record_type=record_type, debug=args.debug
@@ -46,7 +48,7 @@ def main(args):
         tmpresults = dnsp.run_parser()
         if tmpresults:
             victims.extend(tmpresults[:])
-    print("Results of run:")
+    logger.info("Results of run:")
     print(*victims, sep="\n")
 
 
