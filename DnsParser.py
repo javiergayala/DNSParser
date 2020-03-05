@@ -6,11 +6,15 @@ Raises:
 Returns:
     [list] -- Records resulting from the search.
 """
+import ipaddress
+import logging
 import os
-from dnszone import dnszone
+
+import logzero
 from blackhc.progress_bar import with_progress_bar
+from dnszone import dnszone
 from logzero import logger
-from ipaddress import IPv6Address
+from DnsRecord import DnsRecord
 
 
 class DnsParser:
@@ -23,7 +27,9 @@ class DnsParser:
         [list] -- Records resulting from the search.
     """
 
-    def __init__(self, ip, filename=None, record_type="A", debug=False):
+    def __init__(
+        self, ip, filename=None, record_type="A", debug=False, scriptOutType=None
+    ):
         """Initialize the class.
 
         Arguments:
@@ -33,17 +39,23 @@ class DnsParser:
             filename {str} -- Path to the BIND9 zone file (default: {None})
             record_type {str} -- Type of record to search for (default: {"A"})
             debug {bool} -- Set to True to enable debug messages (default: {False})
+            scriptOutType {str} -- Type of script to output (default: {None})
 
         Raises:
             DnsParserInputError: Exception for errors pertaining to the input recevied.
         """
-        self.ip = ip if record_type == "A" else IPv6Address(ip).exploded
+        self.ip = ip
         self.filename = filename
         self.debug = debug
+        self.scriptOutType = scriptOutType
         self.results = []
+        self.domain = None
         self.names = None
         self.zonefile = None
-        self.record_type = record_type
+        self.record_type = "A" if self.ip.version == 4 else "AAAA"
+        logzero.loglevel(logging.INFO)
+        if self.debug:
+            logzero.loglevel(logging.DEBUG)
         if self.filename is None:
             raise DnsParserInputError("filename", "Must include filename to parse")
 
@@ -66,9 +78,8 @@ class DnsParser:
         """
         logger.info("Domain name: %s" % self.get_domain_from_file())
         logger.info("Filename to open: %s" % self.filename)
-        self.zonefile = dnszone.zone_from_file(
-            self.get_domain_from_file(), self.filename
-        )
+        self.domain = self.get_domain_from_file()
+        self.zonefile = dnszone.zone_from_file(self.domain, self.filename)
         self.names = list(self.zonefile.names)
         return True
 
@@ -87,15 +98,23 @@ class DnsParser:
             if self.debug:
                 logger.info("Skipping %s: %s" % (name, e))
             return
-        if self.record_type == "AAAA":
+        if self.ip.version == 6:
+            logger.debug("IPv6 Detected")
             exploded_ips = []
             for ip in ips:
-                exploded_ips.append(IPv6Address(ip).exploded)
+                pIp = ipaddress.ip_address(ip)
+                exploded_ips.append(pIp.exploded)
             ips = exploded_ips
-        if self.ip in ips:
+        if self.ip.exploded in ips:
             if self.debug:
-                logger.info("!!! IP %s in %s for %s" % (self.ip, ips, name))
-            self.results.append(name)
+                logger.debug("!!! IP %s in %s for %s" % (self.ip.exploded, ips, name))
+            if self.scriptOutType:
+                rout = DnsRecord(domain=self.domain, entry=name)
+                # rout = {"domain": self.domain, "entry": name}
+                logger.debug("Individual result: %s" % rout)
+                self.results.append(rout)
+            else:
+                self.results.append(name)
 
     def run_parser(self):
         """Initiate the check against the zone file.
@@ -115,6 +134,7 @@ class DnsParser:
         if len(self.results) == 0:
             return None
         else:
+            logger.debug("Results: %s" % self.results)
             return self.results
 
     def get_ip(self):

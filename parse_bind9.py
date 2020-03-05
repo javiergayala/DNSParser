@@ -6,6 +6,7 @@ __version__ = "0.1.0"
 __license__ = "MIT"
 
 import argparse
+import ipaddress
 import logging
 import os
 
@@ -15,16 +16,28 @@ from dnszone import dnszone
 from logzero import logger
 
 from DnsParser import DnsParser, DnsParserError, DnsParserInputError
+from ScriptGenerator import ScriptGenerator
 
 # Read in the zone file
-zonefile = dnszone.zone_from_file(
-    "rackspace.com", "/Users/jayala/tmp/rackspace.com.zone"
-)
-ip = "23.253.6.64"
+zonefile = None
+ip = ""
 # Debug
 debugOn = False
 # Initialize the results holder
 victims = []
+
+
+def parseIp(ip=None):
+    if not ip:
+        logger.error("NO IP ADDRESS PROVIDED TO parseIp()")
+        return None
+    try:
+        parsedIp = ipaddress.ip_address(ip)
+    except ValueError as e:
+        logger.error("Error Parsing IP: %s" % e)
+        logger.error("Provided IP is not a valid IP: %s" % ip)
+        return None
+    return parsedIp
 
 
 def main(args):
@@ -34,6 +47,9 @@ def main(args):
     if args.verbose >= 1:
         logzero.loglevel(logging.DEBUG)
     logger.debug(args)
+    parsedip = parseIp(ip=args.ip)
+    if not parsedip:
+        cname = args.ip
     record_type = "A"
     if args.aaaa:
         record_type = "AAAA"
@@ -43,13 +59,29 @@ def main(args):
         logger.debug("Filename(s) parsing: %s" % filenames)
     for filename in filenames:
         dnsp = DnsParser(
-            args.ip, filename=filename, record_type=record_type, debug=args.debug
+            parsedip,
+            filename=filename,
+            record_type=record_type,
+            debug=args.debug,
+            scriptOutType=args.scriptouttype,
         )
         tmpresults = dnsp.run_parser()
         if tmpresults:
             victims.extend(tmpresults[:])
-    logger.info("Results of run:")
-    print(*victims, sep="\n")
+    if not args.scriptouttype:
+        logger.info("Results of run:")
+        print(*victims, sep="\n")
+    else:
+        if parsedip:
+            scriptoutput = ScriptGenerator(
+                records=victims, ip=parsedip.exploded, action=args.scriptouttype
+            )
+        elif cname:
+            scriptoutput = ScriptGenerator(
+                records=victims, cname=cname, action=args.scriptouttype
+            )
+        # print("%s" % scriptoutput.get_script())
+        print(*scriptoutput.get_script(), sep="\n")
 
 
 def filenamesToList(filenames):
@@ -105,6 +137,14 @@ if __name__ == "__main__":
         dest="filenames",
         required=True,
         help="Filename(s) to parse (BIND9 Format). Optionally provide a single directory name to parse for filenames ending in '.zone'.",
+    )
+
+    parser.add_argument(
+        "-o",
+        "--output-as-script-type",
+        action="store",
+        dest="scriptouttype",
+        help="Produce output that can be used in a DNS script. Must include type (del, add)",
     )
 
     # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
