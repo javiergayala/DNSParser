@@ -40,7 +40,7 @@ class ScriptGenerator:
         Returns:
             {str} -- script entry
         """
-        return f"add_address_record {record.domain} {record.entry} {self.ip}"
+        return f"add_address_record {record.domain} {record.entry.strip('.')} {self.ip}"
 
     def del_a(self, record):
         """Produce a script entry for deleting an A record.
@@ -51,7 +51,7 @@ class ScriptGenerator:
         Returns:
             {str} -- script entry
         """
-        return f"del_address_record {record.domain} {record.entry} {self.ip}"
+        return f"del_address_record {record.domain} {record.entry.strip('.')} {self.ip}"
 
     def add_aaaa(self, record):
         """Produce a script entry for adding a AAAA record.
@@ -62,8 +62,8 @@ class ScriptGenerator:
         Returns:
             {str} -- script entry
         """
-        logger.info("add_aaaa record: %s" % record.domain)
-        return f"add_aaaa_record {record.domain} {record.entry} {self.ip}"
+        domain = record["domain"]
+        return f"add_aaaa_record {record.domain} {record.entry.strip('.')} {self.ip}"
 
     def del_aaaa(self, record):
         """Produce a script entry for deleting a AAAA record.
@@ -74,7 +74,7 @@ class ScriptGenerator:
         Returns:
             {str} -- script entry
         """
-        return f"del_aaaa_record {record.domain} {record.entry} {self.ip}"
+        return f"del_aaaa_record {record.domain} {record.entry.strip('.')} {self.ip}"
 
     def add_cname(self, record):
         """Produce a script entry for adding a CNAME record.
@@ -85,7 +85,9 @@ class ScriptGenerator:
         Returns:
             {str} -- script entry
         """
-        return f"add_cname_record {record.domain} {record.entry} {self.cname}"
+        return (
+            f"add_cname_record {record.domain} {record.entry.strip('.')} {self.cname}"
+        )
 
     def del_cname(self, record):
         """Produce a script entry for deleting a CNAME record.
@@ -96,7 +98,9 @@ class ScriptGenerator:
         Returns:
             {str} -- script entry
         """
-        return f"del_cname_record {record.domain} {record.entry} {self.cname}"
+        return (
+            f"del_cname_record {record.domain} {record.entry.strip('.')} {self.cname}"
+        )
 
     def get_script(self):
         """Produce and return the script as a string.
