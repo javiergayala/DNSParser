@@ -9,18 +9,20 @@ class ScriptGenerator:
         {str} -- script to paste into the script runner
     """
 
-    def __init__(self, records=[], ip=None, cname=None, action=None):
+    def __init__(self, records=[], ip=None, cname=None, raw=False, action=None):
         """Initialize the ScriptGenerator class.
 
         Keyword Arguments:
             records {list} -- List of domains/hostnames to create a script for. (default: {[]})
             ip {ipaddress.IPv4Address or ipaddress.IPv6Address} -- IP Address (default: {None})
             cname {str} -- CNAME fqdn
+            raw {bool} -- True if not using Bind9 zone files as source (default: {False})
             action {str} -- Action to take: del, add, etc. (default: {None})
         """
         self.records = records
         self.ip = ipaddress.ip_address(ip)
         self.cname = cname
+        self.raw = raw
         self.action = action
         self.actions = {
             "del_aaaa": "del_aaaa_record",
@@ -62,7 +64,7 @@ class ScriptGenerator:
         Returns:
             {str} -- script entry
         """
-        domain = record["domain"]
+        # domain = record["domain"]
         return f"add_aaaa_record {record.domain} {record.entry.strip('.')} {self.ip}"
 
     def del_aaaa(self, record):
@@ -108,7 +110,11 @@ class ScriptGenerator:
         Returns:
             {str} -- Script output
         """
-        script = []
+        script = [
+            "\n=============================",
+            "Output for the script runner:",
+            "=============================\n",
+        ]
         for record in self.records:
             logger.info(record)
             if self.ip:

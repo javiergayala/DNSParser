@@ -3,3 +3,4 @@ black
 pydocstyle
 dnszone >= 2.0.2
 blackhc.progress_bar
+tldextract
