@@ -55,7 +55,7 @@ def main(args):
         record_type = "AAAA"
         logger.info("Record Type set to AAAA")
     if args.filenames:
-        filenames = filenamesToList(args.filenames)
+        filenames = filenamesToList(args.filenames, args.file_ext)
         logger.debug("Filename(s) parsing: %s" % filenames)
     for filename in filenames:
         dnsp = DnsParser(
@@ -84,7 +84,7 @@ def main(args):
         print(*scriptoutput.get_script(), sep="\n")
 
 
-def filenamesToList(filenames):
+def filenamesToList(filenames, file_ext):
     """Split the filenames into a list.
 
     Arguments:
@@ -98,7 +98,7 @@ def filenamesToList(filenames):
         found_files = []
         for entry in os.listdir(tmpfilenames[0]):
             name, ext = os.path.splitext(entry)
-            if ext == ".zone":
+            if ext == file_ext:
                 found_files.append(os.path.join(tmpfilenames[0], entry))
         tmpfilenames = found_files
 
@@ -137,6 +137,15 @@ if __name__ == "__main__":
         dest="filenames",
         required=True,
         help="Filename(s) to parse (BIND9 Format). Optionally provide a single directory name to parse for filenames ending in '.zone'.",
+    )
+
+    parser.add_argument(
+        "-e",
+        "--ext",
+        action="store",
+        dest="file_ext",
+        default=".zone",
+        help="Filename Extension to target (Defaults to .zone)",
     )
 
     parser.add_argument(
