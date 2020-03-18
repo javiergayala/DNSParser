@@ -99,7 +99,7 @@ def filenamesToList(filenames):
         for entry in os.listdir(tmpfilenames[0]):
             name, ext = os.path.splitext(entry)
             if ext == ".zone":
-                found_files.append(entry)
+                found_files.append(os.path.join(tmpfilenames[0], entry))
         tmpfilenames = found_files
 
     return tmpfilenames

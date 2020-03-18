@@ -67,7 +67,7 @@ class DnsParser:
         """
         if self.filename is None:
             return False
-        domain, ext = os.path.splitext(self.filename)
+        domain, ext = os.path.splitext(os.path.basename(self.filename))
         return domain
 
     def parse_zonefile(self):
